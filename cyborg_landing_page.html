@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNIT-07 // SYNTHETIC COGNITION INTERFACE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B0E0C;
+    --bg-panel: #11150F;
+    --ink: #D8DED6;
+    --ink-dim: #7A8B82;
+    --circuit: #4A6157;
+    --circuit-bright: #7FE6A8;
+    --warn: #E8462B;
+    --line: rgba(216,222,214,0.12);
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-mono);
+    overflow-x:hidden;
+    position:relative;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important; }
+  }
+
+  /* scanline texture */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg, rgba(216,222,214,0.025) 0px, rgba(216,222,214,0.025) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+    z-index:9999;
+    mix-blend-mode:overlay;
+  }
+
+  a{ color:inherit; }
+  :focus-visible{ outline:2px solid var(--circuit-bright); outline-offset:3px; }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 32px; }
+
+  /* ===== signal bar (signature element) ===== */
+  #signal-bar{
+    position:fixed; top:0; left:0; height:3px; width:100%;
+    background:var(--bg-panel); z-index:1000;
+  }
+  #signal-fill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--circuit), var(--circuit-bright));
+    box-shadow:0 0 8px var(--circuit-bright);
+    transition:width 0.1s linear;
+  }
+
+  /* ===== nav ===== */
+  nav{
+    position:fixed; top:3px; left:0; right:0; z-index:900;
+    background:rgba(11,14,12,0.85);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  nav .wrap{ display:flex; align-items:center; justify-content:space-between; height:64px; }
+  .logo{
+    font-family:var(--font-mono); font-weight:700; font-size:14px; letter-spacing:0.12em;
+    display:flex; align-items:center; gap:10px;
+  }
+  .logo .dot{
+    width:8px; height:8px; border-radius:50%; background:var(--circuit-bright);
+    box-shadow:0 0 6px var(--circuit-bright);
+    animation:blink 2.4s ease-in-out infinite;
+  }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+  .navlinks{ display:flex; gap:28px; font-size:12px; letter-spacing:0.08em; }
+  .navlinks a{ text-decoration:none; color:var(--ink-dim); transition:color 0.2s; position:relative; }
+  .navlinks a:hover{ color:var(--circuit-bright); }
+  .navlinks a::before{ content:"// "; color:var(--circuit); }
+  .navtoggle{ display:none; background:none; border:1px solid var(--line); color:var(--ink); width:40px; height:40px; cursor:pointer; }
+
+  /* ===== hero ===== */
+  header.hero{
+    position:relative; min-height:100vh; display:flex; flex-direction:column; justify-content:center;
+    padding-top:90px; padding-bottom:60px;
+    border-bottom:1px solid var(--line);
+  }
+  .hero-grid{
+    position:absolute; inset:0; opacity:0.35; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(ellipse at 70% 30%, black 10%, transparent 70%);
+  }
+  .eyebrow{
+    font-size:12px; letter-spacing:0.18em; color:var(--circuit-bright);
+    display:flex; align-items:center; gap:10px; margin-bottom:28px;
+  }
+  .eyebrow .bracket{ color:var(--ink-dim); }
+  h1{
+    font-family:var(--font-display); font-weight:700;
+    font-size:clamp(40px, 8vw, 96px); line-height:0.98; letter-spacing:-0.02em;
+    max-width:920px;
+    margin-bottom:28px;
+  }
+  h1 .accent{ color:var(--circuit-bright); }
+  h1 .glitch-wrap{ position:relative; display:inline-block; }
+  .lede{
+    font-family:var(--font-mono); font-size:15px; line-height:1.7; color:var(--ink-dim);
+    max-width:540px; margin-bottom:44px;
+  }
+  .hero-ctas{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:64px; }
+  .btn{
+    font-family:var(--font-mono); font-size:13px; letter-spacing:0.06em;
+    padding:16px 28px; border:1px solid var(--ink); background:transparent; color:var(--ink);
+    cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:10px;
+    transition:all 0.2s ease; position:relative; overflow:hidden;
+  }
+  .btn-primary{ background:var(--circuit-bright); color:#0B0E0C; border-color:var(--circuit-bright); font-weight:700; }
+  .btn-primary:hover{ background:var(--ink); border-color:var(--ink); transform:translateY(-2px); }
+  .btn-ghost:hover{ border-color:var(--circuit-bright); color:var(--circuit-bright); }
+
+  /* vitals readout strip */
+  .vitals{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+    background:var(--line); border:1px solid var(--line);
+    max-width:920px;
+  }
+  .vital{ background:var(--bg); padding:20px 22px; }
+  .vital .label{ font-size:10px; letter-spacing:0.12em; color:var(--ink-dim); margin-bottom:8px; }
+  .vital .value{ font-family:var(--font-display); font-size:24px; font-weight:600; color:var(--circuit-bright); }
+  .vital .value small{ font-family:var(--font-mono); font-size:12px; color:var(--ink-dim); font-weight:400; }
+
+  /* ===== sections shared ===== */
+  section{ padding:120px 0; border-bottom:1px solid var(--line); position:relative; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:64px; flex-wrap:wrap; gap:16px; }
+  .section-num{ font-size:12px; color:var(--circuit-bright); letter-spacing:0.1em; }
+  h2{
+    font-family:var(--font-display); font-weight:700; font-size:clamp(28px,4vw,44px);
+    letter-spacing:-0.01em;
+  }
+  .section-desc{ font-size:13px; color:var(--ink-dim); max-width:320px; text-align:right; line-height:1.6; }
+
+  /* ===== modules grid (capabilities) ===== */
+  .modules{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .module{
+    background:var(--bg-panel); padding:36px 32px; position:relative;
+    transition:background 0.3s ease;
+  }
+  .module:hover{ background:#161B14; }
+  .module .mod-id{ font-size:11px; color:var(--ink-dim); margin-bottom:18px; letter-spacing:0.1em; }
+  .module h3{ font-family:var(--font-display); font-size:20px; margin-bottom:12px; font-weight:600; }
+  .module p{ font-size:13px; line-height:1.7; color:var(--ink-dim); }
+  .module .bar{ height:2px; background:var(--line); margin-top:24px; position:relative; overflow:hidden; }
+  .module .bar::after{
+    content:""; position:absolute; left:0; top:0; height:100%; width:var(--pct,60%);
+    background:var(--circuit-bright);
+  }
+
+  /* ===== diagnostic / stats band ===== */
+  .diagnostic{ background:var(--bg-panel); }
+  .diag-readout{
+    font-family:var(--font-mono); font-size:13px; line-height:2.1; color:var(--circuit-bright);
+    background:#0B0E0C; border:1px solid var(--line); padding:32px; max-width:700px;
+    white-space:pre-wrap;
+  }
+  .diag-readout .ok{ color:var(--circuit-bright); }
+  .diag-readout .dim{ color:var(--ink-dim); }
+  .cursor-blink{ display:inline-block; width:8px; height:14px; background:var(--circuit-bright); animation:blink 1s steps(1) infinite; vertical-align:middle; }
+
+  /* ===== process / build sequence (timeline IS sequential, so numbering is earned) ===== */
+  .sequence{ position:relative; }
+  .seq-line{ position:absolute; left:23px; top:0; bottom:0; width:1px; background:var(--line); }
+  .seq-item{ display:flex; gap:32px; padding-bottom:56px; position:relative; }
+  .seq-item:last-child{ padding-bottom:0; }
+  .seq-marker{
+    flex-shrink:0; width:48px; height:48px; border:1px solid var(--circuit);
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--circuit-bright);
+    background:var(--bg); z-index:2; font-weight:700;
+  }
+  .seq-body h4{ font-family:var(--font-display); font-size:19px; margin-bottom:8px; font-weight:600; }
+  .seq-body p{ font-size:13px; color:var(--ink-dim); line-height:1.7; max-width:560px; }
+
+  /* ===== final CTA ===== */
+  .cta-section{ text-align:center; padding:140px 0; }
+  .cta-section h2{ font-size:clamp(32px,5vw,56px); margin-bottom:24px; }
+  .cta-section p{ color:var(--ink-dim); font-size:14px; margin-bottom:40px; max-width:480px; margin-left:auto; margin-right:auto; line-height:1.7; }
+
+  footer{ padding:48px 0; }
+  footer .wrap{ display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--ink-dim); letter-spacing:0.06em; flex-wrap:wrap; gap:16px; }
+
+  /* ===== responsive ===== */
+  @media (max-width: 880px){
+    .modules{ grid-template-columns:1fr; }
+    .vitals{ grid-template-columns:repeat(2,1fr); }
+    .section-head{ flex-direction:column; align-items:flex-start; }
+    .section-desc{ text-align:left; }
+  }
+  @media (max-width: 640px){
+    .navlinks{ display:none; }
+    .navtoggle{ display:block; }
+    .vitals{ grid-template-columns:1fr 1fr; }
+    section{ padding:72px 0; }
+    .wrap{ padding:0 20px; }
+    .seq-item{ gap:18px; }
+  }
+</style>
+</head>
+<body>
+
+  <div id="signal-bar"><div id="signal-fill"></div></div>
+
+  <nav>
+    <div class="wrap">
+      <div class="logo"><span class="dot"></span> UNIT&#8209;07.SYS</div>
+      <div class="navlinks">
+        <a href="#capabilities">capabilities</a>
+        <a href="#diagnostics">diagnostics</a>
+        <a href="#calibration">calibration</a>
+        <a href="#activate">activate</a>
+      </div>
+      <button class="navtoggle" aria-label="menu">&#9776;</button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-grid"></div>
+    <div class="wrap">
+      <div class="eyebrow"><span class="bracket">[</span> SYNTHETIC COGNITION INTERFACE &mdash; BUILD 07.2 <span class="bracket">]</span></div>
+      <h1>Half&nbsp;machine.<br><span class="accent">Fully&nbsp;awake.</span></h1>
+      <p class="lede">An augmentation framework for human cognition. Neural lattice, adaptive limb response, and a visual system built to feel like it's reading your vitals back to you.</p>
+      <div class="hero-ctas">
+        <a href="#activate" class="btn btn-primary">INITIATE SEQUENCE &rarr;</a>
+        <a href="#diagnostics" class="btn btn-ghost">RUN DIAGNOSTICS</a>
+      </div>
+      <div class="vitals">
+        <div class="vital"><div class="label">NEURAL SYNC</div><div class="value">98.4<small>%</small></div></div>
+        <div class="vital"><div class="label">RESPONSE LATENCY</div><div class="value">11<small>ms</small></div></div>
+        <div class="vital"><div class="label">UPTIME</div><div class="value">412<small>days</small></div></div>
+        <div class="vital"><div class="label">CORE TEMP</div><div class="value">36.6<small>&deg;C</small></div></div>
+      </div>
+    </div>
+  </header>
+
+  <section id="capabilities">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="section-num">01 &mdash; CAPABILITIES</div>
+          <h2>What the lattice does</h2>
+        </div>
+        <p class="section-desc">Three subsystems, working in parallel, sharing one signal bus.</p>
+      </div>
+      <div class="modules">
+        <div class="module">
+          <div class="mod-id">MOD.A &mdash; COGNITION</div>
+          <h3>Predictive Reasoning</h3>
+          <p>Pattern recall across 40,000 simulated decision trees per second, surfaced before you consciously ask the question.</p>
+          <div class="bar" style="--pct:92%"></div>
+        </div>
+        <div class="module">
+          <div class="mod-id">MOD.B &mdash; MOTOR</div>
+          <h3>Adaptive Limb Response</h3>
+          <p>Servo-assisted reflex correction tuned to your own gait and grip pressure, recalibrating every 6 hours while you rest.</p>
+          <div class="bar" style="--pct:87%"></div>
+        </div>
+        <div class="module">
+          <div class="mod-id">MOD.C &mdash; SENSORY</div>
+          <h3>Spectrum Vision Overlay</h3>
+          <p>Infrared and low-light layers blended into natural sight, with a manual fallback to unmodified vision at any time.</p>
+          <div class="bar" style="--pct:95%"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="diagnostics" class="diagnostic">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="section-num">02 &mdash; DIAGNOSTICS</div>
+          <h2>Self-test, live</h2>
+        </div>
+        <p class="section-desc">The same boot log every unit runs before it's cleared for activation.</p>
+      </div>
+      <div class="diag-readout" id="diag-output"></div>
+    </div>
+  </section>
+
+  <section id="calibration">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="section-num">03 &mdash; CALIBRATION</div>
+          <h2>Getting fitted</h2>
+        </div>
+        <p class="section-desc">A four-stage process, run once, recalibrated quarterly.</p>
+      </div>
+      <div class="sequence">
+        <div class="seq-line"></div>
+        <div class="seq-item">
+          <div class="seq-marker">01</div>
+          <div class="seq-body">
+            <h4>Baseline Scan</h4>
+            <p>Full-body neural and motor mapping, roughly 40 minutes, no sedation required for standard configurations.</p>
+          </div>
+        </div>
+        <div class="seq-item">
+          <div class="seq-marker">02</div>
+          <div class="seq-body">
+            <h4>Lattice Fitting</h4>
+            <p>The cognition layer is matched to your existing neural pathways rather than overriding them &mdash; augmentation, not replacement.</p>
+          </div>
+        </div>
+        <div class="seq-item">
+          <div class="seq-marker">03</div>
+          <div class="seq-body">
+            <h4>Live Calibration</h4>
+            <p>72 hours of supervised adjustment while the system learns your specific reflex timing and decision patterns.</p>
+          </div>
+        </div>
+        <div class="seq-item">
+          <div class="seq-marker">04</div>
+          <div class="seq-body">
+            <h4>Independent Operation</h4>
+            <p>Full handoff. The unit operates silently in the background from here, surfacing only when it has something worth surfacing.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="activate" class="cta-section">
+    <div class="wrap">
+      <div class="section-num" style="justify-content:center;display:flex;">04 &mdash; ACTIVATE</div>
+      <h2>Ready when you are.</h2>
+      <p>No commitment at this stage &mdash; the first scan is diagnostic only, and you keep full manual override at every step.</p>
+      <a href="#" class="btn btn-primary">BEGIN BASELINE SCAN &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div>UNIT-07.SYS &mdash; BUILD 07.2</div>
+      <div>STATUS: <span style="color:var(--circuit-bright)">OPERATIONAL</span></div>
+    </div>
+  </footer>
+
+<script>
+  // Signal bar = scroll progress (signature element)
+  const fill = document.getElementById('signal-fill');
+  function updateSignal(){
+    const h = document.documentElement;
+    const scrolled = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    fill.style.width = scrolled + '%';
+  }
+  document.addEventListener('scroll', updateSignal);
+  updateSignal();
+
+  // Diagnostic boot-log typing effect
+  const lines = [
+    { t: '> INITIALIZING UNIT-07.SYS ...', cls: 'dim' },
+    { t: '> NEURAL LATTICE ........... [ OK ]', cls: 'ok' },
+    { t: '> MOTOR SUBSYSTEM .......... [ OK ]', cls: 'ok' },
+    { t: '> SENSORY OVERLAY .......... [ OK ]', cls: 'ok' },
+    { t: '> POWER CORE ............... 98.4%', cls: 'ok' },
+    { t: '> MEMORY INTEGRITY ......... 100%', cls: 'ok' },
+    { t: '> ALL SYSTEMS NOMINAL.', cls: 'ok' },
+    { t: '> AWAITING INPUT ', cls: 'dim' },
+  ];
+  const out = document.getElementById('diag-output');
+  let started = false;
+
+  function typeLines(){
+    if (started) return;
+    started = true;
+    let i = 0;
+    function next(){
+      if (i >= lines.length){
+        out.innerHTML += '<span class="cursor-blink"></span>';
+        return;
+      }
+      const span = document.createElement('div');
+      span.className = lines[i].cls;
+      out.appendChild(span);
+      const text = lines[i].t;
+      let c = 0;
+      const iv = setInterval(()=>{
+        span.textContent = text.slice(0, c+1);
+        c++;
+        if (c >= text.length){
+          clearInterval(iv);
+          i++;
+          setTimeout(next, 120);
+        }
+      }, 14);
+    }
+    next();
+  }
+
+  const diagSection = document.getElementById('diagnostics');
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) typeLines(); });
+  }, { threshold: 0.3 });
+  observer.observe(diagSection);
+
+  // Respect reduced motion: skip typing animation, show instantly
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    out.innerHTML = lines.map(l => `<div class="${l.cls}">${l.t}</div>`).join('');
+    started = true;
+  }
+
+  // mobile nav toggle (simple show/hide)
+  const toggle = document.querySelector('.navtoggle');
+  const navlinks = document.querySelector('.navlinks');
+  toggle.addEventListener('click', ()=>{
+    const isOpen = navlinks.style.display === 'flex';
+    navlinks.style.display = isOpen ? 'none' : 'flex';
+    navlinks.style.position = 'fixed';
+    navlinks.style.top = '64px';
+    navlinks.style.left = '0';
+    navlinks.style.right = '0';
+    navlinks.style.flexDirection = 'column';
+    navlinks.style.background = '#0B0E0C';
+    navlinks.style.padding = '24px';
+    navlinks.style.borderBottom = '1px solid var(--line)';
+  });
+</script>
+
+</body>
+</html>
